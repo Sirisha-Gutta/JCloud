@@ -38,5 +38,7 @@ or use IDE **Pycharm**
 1. Launches the application
 1. POST /hash - Hash and encode a password string. The request to accept password and returns the id of Base64 encoded string of the password that’s been hashed with SHA512
 1. GET /hash/:id - Retrieve a generated hash with the id  
-1. GET /stats - Statistics endpoint. Returns a JSON object with the total count of the number of password hash requests made to the server so far and the average time in milliseconds it has taken to process all of the requests
-1. GET /shutdown - Graceful shutdown
+1. GET /stats - accepts no data. Returns a JSON object with the total count of the number of password hash requests made since the server started and the average time in milliseconds it has taken to process all of the requests
+1. POST /shutdown - allows any in-flight password hashing to complete, reject any new requests and
+shutdown.
+
