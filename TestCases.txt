@@ -1,0 +1,189 @@
+TITLE: POST Request to Hash Password
+SETUP:
+- Password hashing application is running 
+STEPS:
+1. Execute the call to endpoint http://127.0.0.1:8088/hash with a POST request 
+2. Include following JSON body ,{"password": "angrymonkey"}
+
+EXPECTED:
+- requests should return 2XX HTTP status code
+- Generates Job identifier immediately
+======================================================================================================
+TITLE: GET Request to Hash Endpoint using identifier
+SETUP:
+- Need to have submitted a password for hashing and a corresponding job id
+STEPS:
+1. Execute call to http://127.0.0.1:8088/hash/1 with a GET request
+
+EXPECTED:
+- requests should return 2XX HTTP status code
+==============================================================================================
+TITLE: GET Request to Stats Endpoint 
+SETUP:
+- Password hashing application is running 
+STEPS:
+1. Execute call to http://127.0.0.1:8088/stats with a GET request
+
+EXPECTED:
+- requests should return 2XX HTTP status code
+- Returns json data structure
+ {"TotalRequests":<total hash requests>,"AverageTime":hash request in milliseconds}
+====================================================================================
+TITLE: POST Request to Hash Endpoint to Shutdown
+SETUP:
+- Password hashing application is running 
+STEPS:
+1. Execute call to http://127.0.0.1:8088/stats with a POST request
+2. The request needs to include following data 'shutdown'
+
+EXPECTED:
+- requests should return 2XX HTTP status code
+=============================================================================================
+TITLE: GET Request to Hash endpoint should not Succeed Without a Job identifier
+SETUP:
+- Need to have submitted a password for hashing and a corresponding job id
+STEPS:
+1. Execute call to http://127.0.0.1:8088/hash with a GET request without job id
+
+EXPECTED:
+- HTTP status code returns 4xx 
+===================================================================================
+TITLE: GET Request to Hash endpoint should not Succeed Without an invalid Job identifier
+SETUP:
+- Need to have submitted a password for hashing which generates a job id
+STEPS:
+1. Execute call to http://127.0.0.1:8088/hash/try with a GET request with invalid identifier
+2. Also execute with a non existing job id like 1021
+
+EXPECTED:
+- HTTP status code returns 4xx 
+===================================================================================
+TITLE: Password Hash returns base64 encoded password 
+SETUP:
+- Password hashing application is running
+- POST request to hash endpoint with password generates a job identifier
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/hash/<JOB_ID> endpoint with a GET request
+2. Compare the encoded password hash from the GET request to the encoded password hash
+ using the SHA512 base64 hash generator (https://approsto.com/sha-generator/)
+
+EXPECTED:
+- Encoded password hash from the GET request matches encoded password hash using the SHA512 base64 hash generator
+=====================================================================================
+TITLE: Empty String is not an Acceptable Password in POST request to Hash Endpoint
+
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/hash endpoint with a POST request
+2. In the JSON body include following 
+{"password": ""}
+
+EXPECTED:
+- HTTP status code returns 4xx
+========================================================================================
+
+TITLE: Malformed JSON in POST request to Hash Endpoint is not supported
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/hash endpoint with a POST request
+2. In the JSON body include following
+{"password"}
+
+EXPECTED:
+- HTTP status code returns in the form 4xx
+- JSONError malformed input
+========================================================================================
+TITLE: Only allow password as the key to the POST to Hash request
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/hash endpoint with a POST request
+2. In the JSON body include following
+{"myown":"angrymonkey"}
+
+EXPECTED:
+- HTTP status code returns in the form 4xx
+=========================================================================================
+TITLE: Empty JSON is not allowed in POST Request to Hash Endpoint
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/hash endpoint with a POST request
+2. In the JSON body just include {}
+
+EXPECTED:
+- HTTP status code returns in the form 4xx
+============================================================================================
+TITLE: Response to the GET request to Stats Endpoint is in JSON format
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/stats endpoint with a GET request
+
+EXPECTED:
+- Response from stats endpoint is valid JSON format
+- Displays TotalRequests which is the total requests since the server started
+- Displays AverageTime which is the average time of a hash request in milliseconds.
+===========================================================================================
+
+TITLE: Stats Endpoint does not Support POST or PUT
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/stats endpoint with a POST request
+2. Execute the call to http://127.0.0.1:8088/stats endpoint with a PUT request
+
+EXPECTED:
+- HTTP status code returns in the form 4xx
+==========================================================================================
+TITLE: GET Request on Stats Endpoint should not accept Data
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/stats?newkey=datavalue  with a GET request
+
+EXPECTED:
+- HTTP status code returns in the form 4xx
+==========================================================================================
+TITLE: Process Simultaneous POST Requests to Hash Endpoint
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/hash endpoint multiple times simultaneously with a POST request
+2. Execute the following curl statement in cmd window (on Windows have to use escape sequence )
+curl -X POST -H "application/json" -d "{\"password\":\"angrymonkey\"}" http://127.0.0.1:8088/hash & curl -X POST -H "application/json" -d "{\"password\":\"angrymonkey\"}" http://127.0.0.1:8088/hash & curl -X POST -H "application/json" -d "{\"password\":\"angrymonkey\"}" http://127.0.0.1:8088/hash 
+EXPECTED:
+- The requests return job identifiers
+=============================================================================================
+TITLE: Process Simultaneous GET Requests to Hash Endpoint
+SETUP:
+- multiple POST requests have been made to hash endpoint which return the job identifiers
+STEPS:
+1. Execute the call to http://127.0.0.1:8088/1 endpoint multiple times simultaneously with a GET request
+2. Execute the following curl statement 
+curl http://127.0.0.1:8088/hash/1 & curl http://127.0.0.1:8088/hash/1 & curl http://127.0.0.1:8088/hash/1
+EXPECTED:
+- The requests return encoded password hashes
+==============================================================================================
+TITLE: Allow any in-flight password hashing to complete once shutdown has started
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute POST call to /hash with password 
+2. Simultaneously execute POST call to /hash with data 'shutdown'
+
+EXPECTED:
+- Password hash request returns job identifier
+- Shutdown signal is recieved and Shutting down the server
+
+============================================================================================
+TITLE: Password request denied for new requests Once Shutdown has Started
+SETUP:
+- Password hashing application is running
+STEPS:
+1. Execute POST call to /hash with data 'shutdown'
+2. Execute POST call to /hash with password 
+EXPECTED:
+- Shutdown returns status code of the form 2xx

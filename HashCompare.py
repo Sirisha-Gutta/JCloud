@@ -7,6 +7,8 @@ import requests
 import hashlib
 import urllib.request
 import platform
+import time
+import json
 
 host = "127.0.0.1"
 port = "8088"
@@ -21,21 +23,10 @@ try:
     print("Connected to the specified PORT {0}".format(page_response))
 except:
     print("Connecting to the application ... ")
-    plt = platform.system()
-
-    if plt == "Windows":
-        print("Your system is Windows")
-        os.chdir(os.path.dirname(os.path.realpath(__file__)))
-        my_file = Path.cwd() / "App/broken-hashserve_win.exe"
-        subprocess.Popen(my_file)
-    elif plt == "Linux":
-        print("Your system is Linux")
-        os.chdir(os.path.dirname(os.path.realpath(__file__)))
-        my_file = Path.cwd() / "App/broken-hashserve_linux"
-        # Read, write, and execute by owner
-        os.chmod(my_file, os.stat.S_IRWXU)
-        subprocess.Popen(my_file)
-
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+    my_file = Path.cwd() / "App/broken-hashserve_win.exe"
+    subprocess.Popen(my_file)
+    
 print('==================================================================')
 print("Checking if SHA512 hashed out password matches to the request")
 hash_object = hashlib.sha512('angrymonkey'.encode())
@@ -44,12 +35,20 @@ print("SHA-512: ", hex_dig)
 
 headers = {'Content-Type': 'application/json', }
 data = '{"password":"angrymonkey"}'
+start_time = time.time()
 response = requests.post(url+'/hash', headers=headers, data=data)
+total_time = time.time() - start_time
+
+if (total_time > 1):
+    print('Job identifier took {0} seconds to return results'.format(total_time))
+else:
+    print('Job identifier returned immediately')
+
 identifier = response.text
 print("job identifier: ", identifier)
 
 password_response = requests.get(url+'/hash/' + identifier)
-print("Time taken: ", password_response.elapsed.total_seconds())
+
 print("POST hash request: ", password_response.text)
 
 if hex_dig == password_response.text:
@@ -87,12 +86,29 @@ list_of_urls = [(url+'/hash', form_data)] * 10
 with ThreadPoolExecutor(max_workers=10) as pool:
     response_list = list(pool.map(post_url, list_of_urls))
 
-for response in response_list:
-    print(response)
+status = True
+for res in response_list:
+    if res.status_code >= 300 or res.status_code < 200:
+        status = False
+        break
+
+if not status:
+    print('simultaneous post not successful')
+else:
+    print('simultaneous post successful')
 
 print('==================================================================')
 stats_response = requests.get(url+'/stats')
-print(stats_response.text)
+if json.loads(stats_response.text):
+    print('Response is in JSON format',stats_response.text)
+else:
+    print('Response is not in JSON format instead is ',stats_response.text)
+
+stats_data_response = requests.get(url+'/stats/?newkey=datavalue')
+if stats_data_response.status_code >=400:
+    print('stats request does not accept parameters')
+else:
+    print('stats request accepts parameters ',stats_response.text)
 print('==================================================================')
 print('Shutdown in process...')
 data = 'shutdown'
@@ -102,8 +118,5 @@ print(shutConnect.status_code)
 
 try:
     multiple_requests()
-
 except requests.exceptions.ConnectionError as e:
-    print(e.response)
     print("Requests rejected as there is no Connection")
-

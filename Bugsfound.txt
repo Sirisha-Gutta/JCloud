@@ -1,0 +1,40 @@
+Jump Cloud BUGs found :
+
+
+BUG1:
+- POST request accepts password with empty string or null value
+
+Describe:
+- A POST to /hash endpoint should accept a password but when I pass null value or empty string it is accepted and generates identifier
+
+Issue/Observation:
+POST request allows empty JSON string in the HTTP body when using Content-Type=application/json and generates identifier
+
+BUG2:
+- Job identifier doesn't return immediately
+
+Describe:
+When a POST to hash with a password is sent ,it takes about 5 seconds to return the job identifier. 
+
+BUG3:
+- Base64 encoded password is different if the key is different
+
+Describe:
+When I pass in POST body JSON with key as "password" and value as "angrymonkey", it generates job id which is passed to the GET method that returns
+Base64 encoded Password: NN0PAKtieayiTY8/Qd53AeMzHkbvZDdwYYiDnwtDdv/FIWvcy1sKCb7qi7Nu8Q8Cd/MqjQeyCI0pWKDGp74A1g==
+
+When I pass in POST body JSON with key as "myown" and value as "angrymonkey" , it generates job id which is passed to the GET method that returns
+Base64 encoded Password: z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg==
+
+Base64 encoded Password is using both key and value to give the hashed password
+
+BUG4:
+- Get /stats endpoint supports POST and PUT method
+
+Describe:
+- Stats endpoint allows POST and PUT method instead of not supporting with a 405 error. When I use POST/PUT method with body and send request I get 200 ok
+with results {"TotalRequests":4,"AverageTime":12243}
+
+Issue/Observation:
+- Get /stats endpoint supports parameters and/ JSON body to be passed which returns response back with results {"TotalRequests":4,"AverageTime":12243} and Http status 200
+
